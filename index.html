@@ -1,335 +1,386 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualisasi K-Means Clustering</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #fdfdfd;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .header p {
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-
-        .container {
-            display: flex;
-            gap: 30px;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        }
-
-        canvas {
-            background-color: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 16px;
-            cursor: crosshair;
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 280px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        label {
-            font-weight: 500;
-            font-size: 14px;
-            color: #555;
-        }
-
-        input[type="range"] {
-            width: 100%;
-        }
-
-        button {
-            background-color: #ffffff;
-            border: 2px solid #e9ecef;
-            color: #495057;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        button:hover {
-            background-color: #f8f9fa;
-            border-color: #ced4da;
-        }
-
-        button.primary {
-            background-color: #495057;
-            color: white;
-            border: none;
-        }
-
-        button.primary:hover {
-            background-color: #343a40;
-        }
-
-        .status {
-            padding: 15px;
-            background-color: #e2f0cb;
-            /* Cream green */
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            text-align: center;
-            color: #4c5c36;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-Means: Pengelompokan Warna</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#fff;padding:20px}
+h1{font-size:28px;font-weight:800;background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:6px}
+.subtitle{text-align:center;color:#94a3b8;font-size:14px;margin-bottom:20px}
+.app-layout{display:flex;gap:20px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+.left-panel{flex:1;min-width:300px;display:flex;flex-direction:column;gap:16px}
+.right-panel{width:360px;display:flex;flex-direction:column;gap:16px}
+.card{background:rgba(255,255,255,0.07);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:20px}
+.card-title{font-size:14px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+canvas{width:100%;border-radius:14px;display:block;cursor:crosshair;border:2px solid rgba(167,139,250,0.4)}
+.info-box{background:linear-gradient(135deg,rgba(167,139,250,0.15),rgba(96,165,250,0.15));border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:14px;font-size:13px;color:#cbd5e1;line-height:1.6}
+.info-box strong{color:#a78bfa;display:block;margin-bottom:4px;font-size:14px}
+.step-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:16px;transition:border-color 0.3s}
+.step-card.active{border-color:#a78bfa;background:rgba(167,139,250,0.08)}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.step-name{font-size:14px;font-weight:700;color:#e2e8f0}
+.step-desc{font-size:12px;color:#94a3b8;line-height:1.5;margin-bottom:10px}
+label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+input[type=range]{width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:5px;outline:none;cursor:pointer;accent-color:#a78bfa}
+.k-val{font-size:22px;font-weight:800;color:#a78bfa;margin-left:6px}
+.btn{width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-main{background:linear-gradient(135deg,#a78bfa,#60a5fa);color:#fff;box-shadow:0 4px 20px rgba(167,139,250,0.35)}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(167,139,250,0.5)}
+.btn-out{background:transparent;color:#a78bfa;border:2px solid rgba(167,139,250,0.5)}
+.btn-out:hover{background:rgba(167,139,250,0.1)}
+.btn-red{background:transparent;color:#f87171;border:2px solid rgba(248,113,113,0.4)}
+.btn-red:hover{background:rgba(248,113,113,0.1)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.swatch-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.swatch{width:36px;height:36px;border-radius:8px;border:3px solid rgba(255,255,255,0.2);cursor:pointer;transition:transform 0.2s;flex-shrink:0}
+.swatch:hover{transform:scale(1.2);border-color:#a78bfa}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#cbd5e1;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px}
+.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+#statusBox{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:12px;font-size:13px;color:#6ee7b7;line-height:1.5;min-height:52px}
+#statusBox.warn{background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.3);color:#fde68a}
+#statusBox.info{background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.3);color:#bfdbfe}
+.iteration-badge{display:inline-block;background:linear-gradient(135deg,#a78bfa,#60a5fa);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px}
+</style>
 </head>
-
 <body>
+<h1>🎨 K-Means: Pengelompokan Warna</h1>
+<p class="subtitle">Pelajari cara K-Means mengelompokkan warna yang mirip secara otomatis — tanpa coding!</p>
 
-    <div class="header">
-        <h1>K-Means Clustering</h1>
-        <p>Studi Kasus: Pengelompokan Kedekatan Jarak Koordinat (Warna Pastel)</p>
+<div class="app-layout">
+<div class="left-panel">
+  <div class="card">
+    <div class="card-title">🖼️ Papan Warna (Klik untuk tambah titik!)</div>
+    <canvas id="c" width="700" height="420"></canvas>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📢 Status Proses</div>
+    <div id="statusBox" class="info">👋 Selamat datang! Mulai dari Langkah 1 di sebelah kanan.</div>
+  </div>
+</div>
+
+<div class="right-panel">
+  <div class="info-box">
+    <strong>🤔 Apa itu K-Means?</strong>
+    Bayangkan kamu punya banyak bola warna-warni di lantai. K-Means adalah cara cerdas untuk <b>mengelompokkan bola yang warnanya mirip</b> ke tempat yang sama — secara otomatis!
+  </div>
+
+  <div class="step-card active" id="step1card">
+    <div class="step-header"><div class="step-num">1</div><div class="step-name">Siapkan Data</div></div>
+    <div class="step-desc">Pilih berapa kelompok warna yang kamu inginkan, lalu tambahkan titik-titik warna ke papan.</div>
+    <label>Jumlah Kelompok (K): <span class="k-val" id="kVal">3</span></label>
+    <input type="range" id="kSlider" min="2" max="5" value="3" style="margin-bottom:12px">
+    <div style="margin-bottom:8px"><label>🎨 Pilih warna untuk ditambahkan:</label>
+    <div class="swatch-row" id="swatches"></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-out" id="btnRand" style="flex:1">🎲 Acak 40 Titik</button>
+      <button class="btn btn-red" id="btnClear" style="flex:1">🗑️ Hapus Semua</button>
     </div>
+  </div>
 
-    <div class="container">
-        <canvas id="kmeansCanvas" width="600" height="450"></canvas>
+  <div class="step-card" id="step2card">
+    <div class="step-header"><div class="step-num">2</div><div class="step-name">Tentukan Pusat Awal</div></div>
+    <div class="step-desc">K-Means memilih titik pusat (centroid) secara acak sebagai tebakan awal untuk setiap kelompok.</div>
+    <button class="btn btn-out" id="btnInit">🎯 Tentukan Pusat Acak</button>
+  </div>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="kSlider">Jumlah Cluster (K): <span id="kValue">3</span></label>
-                <input type="range" id="kSlider" min="2" max="5" value="3">
-            </div>
-
-            <button id="btnRandomData">1. Tambah Data Acak</button>
-            <button id="btnInitCentroids">2. Inisialisasi Centroid</button>
-            <button id="btnStep" class="primary" disabled>3. Jalankan Algoritma (Step)</button>
-            <button id="btnReset">Reset Canvas</button>
-
-            <div id="statusText" class="status" style="display: none;">
-                Algoritma siap dijalankan.
-            </div>
-
-            <p style="font-size: 12px; color: #999; margin-top: auto;">
-                *Klik pada area canvas untuk menambah titik data secara manual.
-            </p>
-        </div>
+  <div class="step-card" id="step3card">
+    <div class="step-header"><div class="step-num">3</div><div class="step-name">Jalankan Algoritma<span class="iteration-badge" id="iterBadge">Iter: 0</span></div></div>
+    <div class="step-desc" id="stepDesc">Klik tombol untuk menjalankan algoritma satu langkah demi satu langkah.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-main" id="btnStep" disabled style="flex:2">▶️ Langkah Berikutnya</button>
+      <button class="btn btn-main" id="btnAuto" disabled style="flex:1">⚡ Auto</button>
     </div>
+  </div>
+</div>
+</div>
 
-    <script>
-        const canvas = document.getElementById('kmeansCanvas');
-        const ctx = canvas.getContext('2d');
-        const kSlider = document.getElementById('kSlider');
-        const kValueDisplay = document.getElementById('kValue');
-        const statusText = document.getElementById('statusText');
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+// Cluster colors with names
+const CLUSTERS=[
+  {color:'#f87171',name:'Merah',rgb:{r:248,g:113,b:113}},
+  {color:'#34d399',name:'Hijau',rgb:{r:52,g:211,b:153}},
+  {color:'#60a5fa',name:'Biru',rgb:{r:96,g:165,b:250}},
+  {color:'#fbbf24',name:'Kuning',rgb:{r:251,g:191,b:36}},
+  {color:'#a78bfa',name:'Ungu',rgb:{r:167,g:139,b:250}}
+];
+// Sample swatch colors for user to pick
+const SWATCHES=[
+  '#ff6b6b','#ff9f43','#ffd32a','#0be881','#05c46b',
+  '#67e8f9','#38bdf8','#818cf8','#c084fc','#f472b6',
+  '#fff','#e2e8f0','#94a3b8','#475569','#1e293b'
+];
+let points=[],centroids=[],k=3,phase=0,iter=0,autoTimer=null,selectedColor=SWATCHES[0];
+let isAnimating=false;
 
-        const btnRandomData = document.getElementById('btnRandomData');
-        const btnInitCentroids = document.getElementById('btnInitCentroids');
-        const btnStep = document.getElementById('btnStep');
-        const btnReset = document.getElementById('btnReset');
+// Build swatches
+const swatchRow=document.getElementById('swatches');
+SWATCHES.forEach(c=>{
+  const s=document.createElement('div');
+  s.className='swatch';s.style.background=c;
+  s.title=c;
+  s.addEventListener('click',()=>{
+    selectedColor=c;
+    document.querySelectorAll('.swatch').forEach(x=>x.style.outline='none');
+    s.style.outline='3px solid #a78bfa';
+    s.style.outlineOffset='2px';
+  });
+  swatchRow.appendChild(s);
+});
+swatchRow.children[0].style.outline='3px solid #a78bfa';
+swatchRow.children[0].style.outlineOffset='2px';
 
-        // Palet Warna: Soft Pink, Baby Blue, Light Purple, Cream, Peach
-        const clusterColors = ['#ffb7b2', '#b5ead7', '#c7ceea', '#e2f0cb', '#ffdac1'];
-        const unassignedColor = '#ced4da';
+function hexToRgb(hex){
+  hex=hex.replace('#','');
+  if(hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  return{r:parseInt(hex.substr(0,2),16),g:parseInt(hex.substr(2,2),16),b:parseInt(hex.substr(4,2),16)};
+}
+function colorDist(c1,c2){
+  const a=hexToRgb(c1),b=hexToRgb(c2);
+  return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2);
+}
+function avgColor(pts){
+  if(!pts.length) return null;
+  let r=0,g=0,b=0;
+  pts.forEach(p=>{const c=hexToRgb(p.color);r+=c.r;g+=c.g;b+=c.b;});
+  return'#'+[r,g,b].map(v=>Math.round(v/pts.length).toString(16).padStart(2,'0')).join('');
+}
 
-        let points = [];
-        let centroids = [];
-        let k = 3;
-        let stepPhase = 0; // 0: Assign Points, 1: Update Centroids
+function setStatus(msg,type=''){
+  const b=document.getElementById('statusBox');
+  b.innerHTML=msg;b.className=type;
+}
+function setActive(n){
+  ['step1card','step2card','step3card'].forEach((id,i)=>{
+    document.getElementById(id).classList.toggle('active',i+1===n);
+  });
+}
 
-        kSlider.addEventListener('input', (e) => {
-            k = parseInt(e.target.value);
-            kValueDisplay.innerText = k;
-            resetCentroids();
-        });
+// Canvas click
+canvas.addEventListener('click',e=>{
+  if(isAnimating) return;
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
+  points.push({x,y,color:selectedColor,cluster:-1});
+  softReset();requestAnimationFrame(draw);
+  setStatus(`✅ Titik warna ditambahkan! Total: <b>${points.length} titik</b>. Lanjut ke Langkah 2 jika sudah cukup.`,'info');
+});
 
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            points.push({ x, y, cluster: -1 });
-            draw();
-        });
+document.getElementById('kSlider').addEventListener('input',e=>{
+  k=parseInt(e.target.value);
+  document.getElementById('kVal').innerText=k;
+  softReset();requestAnimationFrame(draw);
+  setStatus(`🔢 Jumlah kelompok diubah ke <b>K=${k}</b>. Tentukan ulang pusat di Langkah 2.`,'info');
+});
 
-        btnRandomData.addEventListener('click', () => {
-            for (let i = 0; i < 50; i++) {
-                points.push({
-                    x: Math.random() * (canvas.width - 40) + 20,
-                    y: Math.random() * (canvas.height - 40) + 20,
-                    cluster: -1
-                });
-            }
-            draw();
-        });
+document.getElementById('btnRand').addEventListener('click',()=>{
+  if(isAnimating) return;
+  stopAuto();
+  for(let i=0;i<40;i++){
+    const c=SWATCHES[Math.floor(Math.random()*SWATCHES.length)];
+    // Cluster near similar hues
+    points.push({
+      x:30+Math.random()*(canvas.width-60),
+      y:30+Math.random()*(canvas.height-60),
+      color:c,cluster:-1
+    });
+  }
+  softReset();requestAnimationFrame(draw);
+  setStatus(`🎲 Berhasil menambahkan <b>40 titik warna acak</b>! Total: <b>${points.length} titik</b>. Lanjut ke Langkah 2.`,'info');
+  setActive(2);
+});
 
-        btnInitCentroids.addEventListener('click', () => {
-            if (points.length < k) {
-                alert("Jumlah data harus lebih banyak dari nilai K!");
-                return;
-            }
-            centroids = [];
-            // Mengambil titik acak sebagai centroid awal
-            let shuffled = [...points].sort(() => 0.5 - Math.random());
-            for (let i = 0; i < k; i++) {
-                centroids.push({ x: shuffled[i].x, y: shuffled[i].y });
-            }
-            points.forEach(p => p.cluster = -1);
-            stepPhase = 0;
-            btnStep.disabled = false;
-            updateStatus("Centroid diinisialisasi. Siap untuk pengelompokan.");
-            draw();
-        });
+document.getElementById('btnClear').addEventListener('click',()=>{
+  stopAuto();points=[];totalReset();
+  setStatus('🗑️ Semua data dihapus. Tambahkan titik baru di Langkah 1.','warn');
+  setActive(1);
+});
 
-        btnStep.addEventListener('click', () => {
-            if (centroids.length === 0) return;
+document.getElementById('btnInit').addEventListener('click',()=>{
+  if(isAnimating) return;
+  stopAuto();
+  if(points.length<k){setStatus(`⚠️ Butuh minimal <b>${k} titik</b> dulu! Sekarang baru ada <b>${points.length}</b>.`,'warn');return;}
+  centroids=[];
+  const shuffled=[...points].sort(()=>0.5-Math.random());
+  for(let i=0;i<k;i++) centroids.push({x:shuffled[i].x,y:shuffled[i].y,color:shuffled[i].color,tx:shuffled[i].x,ty:shuffled[i].y});
+  points.forEach(p=>p.cluster=-1);
+  phase=0;iter=0;
+  document.getElementById('btnStep').disabled=false;
+  document.getElementById('btnAuto').disabled=false;
+  document.getElementById('iterBadge').innerText='Iter: 0';
+  document.getElementById('stepDesc').innerText='Langkah A: Warnai setiap titik sesuai pusat terdekat.';
+  requestAnimationFrame(draw);
+  setStatus(`🎯 <b>${k} titik pusat</b> dipilih secara acak (ditandai ★). Klik "Langkah Berikutnya" di Langkah 3!`,'');
+  setActive(3);
+});
 
-            if (stepPhase === 0) {
-                assignPointsToClusters();
-                updateStatus("Titik data ditugaskan ke centroid terdekat.");
-                stepPhase = 1;
-            } else {
-                updateCentroidsPosition();
-                updateStatus("Posisi centroid diperbarui ke nilai rata-rata.");
-                stepPhase = 0;
-            }
-            draw();
-        });
+document.getElementById('btnStep').addEventListener('click',doStep);
+document.getElementById('btnAuto').addEventListener('click',()=>{
+  if(autoTimer){stopAuto();return;}
+  document.getElementById('btnAuto').innerText='⏹ Stop';
+  autoTimer=setInterval(()=>doStep(true),900);
+});
 
-        btnReset.addEventListener('click', () => {
-            points = [];
-            resetCentroids();
-        });
+function stopAuto(){
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+  document.getElementById('btnAuto').innerText='⚡ Auto';
+}
 
-        function resetCentroids() {
-            centroids = [];
-            points.forEach(p => p.cluster = -1);
-            stepPhase = 0;
-            btnStep.disabled = true;
-            statusText.style.display = 'none';
-            draw();
-        }
+let converged=false;
+function doStep(fromAuto=false){
+  if(isAnimating||centroids.length===0) return;
+  if(converged){setStatus('🏆 Algoritma sudah <b>konvergen (selesai)</b>! Kelompok tidak berubah lagi. Coba reset untuk percobaan baru.','');stopAuto();return;}
+  if(phase===0){
+    assignClusters();
+    phase=1;
+    document.getElementById('stepDesc').innerText='Langkah B: Geser pusat ke posisi rata-rata kelompoknya.';
+    requestAnimationFrame(draw);
+    const counts=Array(k).fill(0);
+    points.forEach(p=>{if(p.cluster>=0)counts[p.cluster]++;});
+    setStatus(`📌 <b>Langkah A selesai!</b> Setiap titik sudah diwarnai sesuai pusat terdekat.<br>Kelompok: ${counts.map((c,i)=>`<b style="color:${CLUSTERS[i].color}">${c} titik</b>`).join(', ')}. Klik lagi untuk geser pusat!`,'');
+  } else {
+    const moved=updateCentroids();
+    iter++;
+    document.getElementById('iterBadge').innerText='Iter: '+iter;
+    phase=0;
+    document.getElementById('stepDesc').innerText='Langkah A: Warnai ulang setiap titik sesuai pusat baru.';
+    if(!moved){
+      converged=true;
+      setStatus(`🏆 <b>SELESAI! Algoritma konvergen di iterasi ke-${iter}.</b> Pusat tidak bergerak lagi — kelompok warna sudah stabil!`,'');
+      stopAuto();
+    } else {
+      animateCentroids();
+      setStatus(`🔄 <b>Iterasi ${iter}:</b> Pusat bergerak ke posisi baru (rata-rata kelompok). Klik lagi untuk mewarnai ulang!`,'');
+    }
+  }
+}
 
-        function updateStatus(message) {
-            statusText.style.display = 'block';
-            statusText.innerText = message;
-        }
+function assignClusters(){
+  points.forEach(p=>{
+    let best=-1,bestD=Infinity;
+    centroids.forEach((c,i)=>{
+      const d=Math.sqrt((p.x-c.x)**2+(p.y-c.y)**2);
+      if(d<bestD){bestD=d;best=i;}
+    });
+    p.cluster=best;
+  });
+}
 
-        // --- Logika Inti K-Means ---
-        function getDistance(p1, p2) {
-            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-        }
+function updateCentroids(){
+  let anyMoved=false;
+  centroids.forEach((c,i)=>{
+    const grp=points.filter(p=>p.cluster===i);
+    if(!grp.length) return;
+    const nx=grp.reduce((s,p)=>s+p.x,0)/grp.length;
+    const ny=grp.reduce((s,p)=>s+p.y,0)/grp.length;
+    const nc=avgColor(grp)||c.color;
+    const moved=Math.abs(nx-c.x)>0.5||Math.abs(ny-c.y)>0.5;
+    if(moved) anyMoved=true;
+    c.tx=nx;c.ty=ny;c.color=nc;
+  });
+  return anyMoved;
+}
 
-        function assignPointsToClusters() {
-            points.forEach(point => {
-                let minDist = Infinity;
-                let closestCluster = -1;
-                centroids.forEach((centroid, index) => {
-                    let dist = getDistance(point, centroid);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closestCluster = index;
-                    }
-                });
-                point.cluster = closestCluster;
-            });
-        }
+function animateCentroids(){
+  isAnimating=true;
+  const starts=centroids.map(c=>({x:c.x,y:c.y}));
+  const t0=performance.now(),dur=500;
+  function frame(t){
+    const prog=Math.min((t-t0)/dur,1);
+    const e=prog<1?1-Math.pow(1-prog,3):1;
+    centroids.forEach((c,i)=>{c.x=starts[i].x+(c.tx-starts[i].x)*e;c.y=starts[i].y+(c.ty-starts[i].y)*e;});
+    draw();
+    if(prog<1) requestAnimationFrame(frame);
+    else{isAnimating=false;if(!converged) document.getElementById('btnStep').disabled=false;}
+  }
+  document.getElementById('btnStep').disabled=true;
+  requestAnimationFrame(frame);
+}
 
-        function updateCentroidsPosition() {
-            let sums = Array(k).fill(null).map(() => ({ x: 0, y: 0, count: 0 }));
+function softReset(){
+  stopAuto();centroids=[];points.forEach(p=>p.cluster=-1);
+  phase=0;iter=0;converged=false;
+  document.getElementById('btnStep').disabled=true;
+  document.getElementById('btnAuto').disabled=true;
+  document.getElementById('iterBadge').innerText='Iter: 0';
+  document.getElementById('btnStep').innerText='▶️ Langkah Berikutnya';
+}
+function totalReset(){softReset();requestAnimationFrame(draw);}
 
-            points.forEach(point => {
-                if (point.cluster !== -1) {
-                    sums[point.cluster].x += point.x;
-                    sums[point.cluster].y += point.y;
-                    sums[point.cluster].count++;
-                }
-            });
+function drawStar(x,y,r,color){
+  const spikes=5,inner=r*0.4,outer=r;
+  let rot=-Math.PI/2;
+  ctx.beginPath();
+  for(let i=0;i<spikes;i++){
+    ctx.lineTo(x+Math.cos(rot)*outer,y+Math.sin(rot)*outer);rot+=Math.PI/spikes;
+    ctx.lineTo(x+Math.cos(rot)*inner,y+Math.sin(rot)*inner);rot+=Math.PI/spikes;
+  }
+  ctx.closePath();
+  ctx.fillStyle=color;ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
+}
 
-            centroids.forEach((centroid, index) => {
-                if (sums[index].count > 0) {
-                    centroid.x = sums[index].x / sums[index].count;
-                    centroid.y = sums[index].y / sums[index].count;
-                }
-            });
-        }
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Grid bg
+  ctx.fillStyle='rgba(255,255,255,0.02)';
+  for(let x=0;x<canvas.width;x+=40) for(let y=0;y<canvas.height;y+=40){ctx.fillRect(x,y,1,1);}
 
-        // --- Visualisasi ---
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Lines to centroid
+  if(centroids.length&&points.some(p=>p.cluster>=0)){
+    ctx.globalAlpha=0.12;ctx.lineWidth=1;
+    points.forEach(p=>{
+      if(p.cluster<0||!centroids[p.cluster]) return;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(centroids[p.cluster].x,centroids[p.cluster].y);
+      ctx.strokeStyle=CLUSTERS[p.cluster]?.color||'#fff';ctx.stroke();
+    });
+    ctx.globalAlpha=1;
+  }
 
-            // Menggambar garis hubung (jika titik sudah dikelompokkan)
-            if (stepPhase === 1) {
-                points.forEach(point => {
-                    if (point.cluster !== -1 && centroids[point.cluster]) {
-                        ctx.beginPath();
-                        ctx.moveTo(point.x, point.y);
-                        ctx.lineTo(centroids[point.cluster].x, centroids[point.cluster].y);
-                        ctx.strokeStyle = clusterColors[point.cluster];
-                        ctx.globalAlpha = 0.4;
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                        ctx.globalAlpha = 1.0;
-                    }
-                });
-            }
+  // Points
+  points.forEach(p=>{
+    const clr=p.cluster>=0?(CLUSTERS[p.cluster]?.color||p.color):p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);
+    ctx.fillStyle=clr;ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.stroke();
+    // Inner color dot
+    ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);
+    ctx.fillStyle=p.color;ctx.fill();
+  });
 
-            // Menggambar titik data
-            points.forEach(point => {
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = point.cluster === -1 ? unassignedColor : clusterColors[point.cluster];
-                ctx.fill();
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-            });
+  // Centroids
+  centroids.forEach((c,i)=>{
+    // Glow
+    const grd=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,25);
+    grd.addColorStop(0,CLUSTERS[i].color+'88');grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(c.x,c.y,25,0,Math.PI*2);ctx.fill();
+    drawStar(c.x,c.y,16,CLUSTERS[i].color);
+    ctx.fillStyle='#fff';ctx.font='bold 11px Inter';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(CLUSTERS[i].name,c.x,c.y+28);
+  });
 
-            // Menggambar centroid (berbentuk kotak agar berbeda)
-            centroids.forEach((centroid, index) => {
-                ctx.beginPath();
-                ctx.rect(centroid.x - 8, centroid.y - 8, 16, 16);
-                ctx.fillStyle = clusterColors[index];
-                ctx.fill();
-                ctx.strokeStyle = '#333';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            });
-        }
+  // Legend
+  buildLegend();
+}
 
-        // Render awal
-        draw();
-    </script>
+function buildLegend(){
+  const leg=document.getElementById('legend');
+  if(!centroids.length){leg.innerHTML='';return;}
+  leg.innerHTML=centroids.map((c,i)=>{
+    const cnt=points.filter(p=>p.cluster===i).length;
+    return`<div class="legend-item"><div class="legend-dot" style="background:${CLUSTERS[i].color}"></div>${CLUSTERS[i].name}: ${cnt} titik</div>`;
+  }).join('');
+}
+
+requestAnimationFrame(draw);
+</script>
 </body>
-
 </html>
