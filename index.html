@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisasi K-Means Clustering</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #fdfdfd;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        canvas {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            cursor: crosshair;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 280px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #555;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        button {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            color: #495057;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #f8f9fa;
+            border-color: #ced4da;
+        }
+
+        button.primary {
+            background-color: #495057;
+            color: white;
+            border: none;
+        }
+
+        button.primary:hover {
+            background-color: #343a40;
+        }
+
+        .status {
+            padding: 15px;
+            background-color: #e2f0cb;
+            /* Cream green */
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            color: #4c5c36;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>K-Means Clustering</h1>
+        <p>Studi Kasus: Pengelompokan Kedekatan Jarak Koordinat (Warna Pastel)</p>
+    </div>
+
+    <div class="container">
+        <canvas id="kmeansCanvas" width="600" height="450"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="kSlider">Jumlah Cluster (K): <span id="kValue">3</span></label>
+                <input type="range" id="kSlider" min="2" max="5" value="3">
+            </div>
+
+            <button id="btnRandomData">1. Tambah Data Acak</button>
+            <button id="btnInitCentroids">2. Inisialisasi Centroid</button>
+            <button id="btnStep" class="primary" disabled>3. Jalankan Algoritma (Step)</button>
+            <button id="btnReset">Reset Canvas</button>
+
+            <div id="statusText" class="status" style="display: none;">
+                Algoritma siap dijalankan.
+            </div>
+
+            <p style="font-size: 12px; color: #999; margin-top: auto;">
+                *Klik pada area canvas untuk menambah titik data secara manual.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('kmeansCanvas');
+        const ctx = canvas.getContext('2d');
+        const kSlider = document.getElementById('kSlider');
+        const kValueDisplay = document.getElementById('kValue');
+        const statusText = document.getElementById('statusText');
+
+        const btnRandomData = document.getElementById('btnRandomData');
+        const btnInitCentroids = document.getElementById('btnInitCentroids');
+        const btnStep = document.getElementById('btnStep');
+        const btnReset = document.getElementById('btnReset');
+
+        // Palet Warna: Soft Pink, Baby Blue, Light Purple, Cream, Peach
+        const clusterColors = ['#ffb7b2', '#b5ead7', '#c7ceea', '#e2f0cb', '#ffdac1'];
+        const unassignedColor = '#ced4da';
+
+        let points = [];
+        let centroids = [];
+        let k = 3;
+        let stepPhase = 0; // 0: Assign Points, 1: Update Centroids
+
+        kSlider.addEventListener('input', (e) => {
+            k = parseInt(e.target.value);
+            kValueDisplay.innerText = k;
+            resetCentroids();
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            points.push({ x, y, cluster: -1 });
+            draw();
+        });
+
+        btnRandomData.addEventListener('click', () => {
+            for (let i = 0; i < 50; i++) {
+                points.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: Math.random() * (canvas.height - 40) + 20,
+                    cluster: -1
+                });
+            }
+            draw();
+        });
+
+        btnInitCentroids.addEventListener('click', () => {
+            if (points.length < k) {
+                alert("Jumlah data harus lebih banyak dari nilai K!");
+                return;
+            }
+            centroids = [];
+            // Mengambil titik acak sebagai centroid awal
+            let shuffled = [...points].sort(() => 0.5 - Math.random());
+            for (let i = 0; i < k; i++) {
+                centroids.push({ x: shuffled[i].x, y: shuffled[i].y });
+            }
+            points.forEach(p => p.cluster = -1);
+            stepPhase = 0;
+            btnStep.disabled = false;
+            updateStatus("Centroid diinisialisasi. Siap untuk pengelompokan.");
+            draw();
+        });
+
+        btnStep.addEventListener('click', () => {
+            if (centroids.length === 0) return;
+
+            if (stepPhase === 0) {
+                assignPointsToClusters();
+                updateStatus("Titik data ditugaskan ke centroid terdekat.");
+                stepPhase = 1;
+            } else {
+                updateCentroidsPosition();
+                updateStatus("Posisi centroid diperbarui ke nilai rata-rata.");
+                stepPhase = 0;
+            }
+            draw();
+        });
+
+        btnReset.addEventListener('click', () => {
+            points = [];
+            resetCentroids();
+        });
+
+        function resetCentroids() {
+            centroids = [];
+            points.forEach(p => p.cluster = -1);
+            stepPhase = 0;
+            btnStep.disabled = true;
+            statusText.style.display = 'none';
+            draw();
+        }
+
+        function updateStatus(message) {
+            statusText.style.display = 'block';
+            statusText.innerText = message;
+        }
+
+        // --- Logika Inti K-Means ---
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function assignPointsToClusters() {
+            points.forEach(point => {
+                let minDist = Infinity;
+                let closestCluster = -1;
+                centroids.forEach((centroid, index) => {
+                    let dist = getDistance(point, centroid);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestCluster = index;
+                    }
+                });
+                point.cluster = closestCluster;
+            });
+        }
+
+        function updateCentroidsPosition() {
+            let sums = Array(k).fill(null).map(() => ({ x: 0, y: 0, count: 0 }));
+
+            points.forEach(point => {
+                if (point.cluster !== -1) {
+                    sums[point.cluster].x += point.x;
+                    sums[point.cluster].y += point.y;
+                    sums[point.cluster].count++;
+                }
+            });
+
+            centroids.forEach((centroid, index) => {
+                if (sums[index].count > 0) {
+                    centroid.x = sums[index].x / sums[index].count;
+                    centroid.y = sums[index].y / sums[index].count;
+                }
+            });
+        }
+
+        // --- Visualisasi ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Menggambar garis hubung (jika titik sudah dikelompokkan)
+            if (stepPhase === 1) {
+                points.forEach(point => {
+                    if (point.cluster !== -1 && centroids[point.cluster]) {
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(centroids[point.cluster].x, centroids[point.cluster].y);
+                        ctx.strokeStyle = clusterColors[point.cluster];
+                        ctx.globalAlpha = 0.4;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
+                });
+            }
+
+            // Menggambar titik data
+            points.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = point.cluster === -1 ? unassignedColor : clusterColors[point.cluster];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            // Menggambar centroid (berbentuk kotak agar berbeda)
+            centroids.forEach((centroid, index) => {
+                ctx.beginPath();
+                ctx.rect(centroid.x - 8, centroid.y - 8, 16, 16);
+                ctx.fillStyle = clusterColors[index];
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+
+        // Render awal
+        draw();
+    </script>
+</body>
+
+</html>
